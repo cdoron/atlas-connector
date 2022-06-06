@@ -90,11 +90,11 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	client := resty.New()
 
 	resp, err := client.R().
-		SetBasicAuth("admin", "admin").
+		SetBasicAuth(s.username, s.password).
 		SetBody(body).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		Post("http://localhost:21000/api/atlas/v2/entity")
+		Post("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity")
 
 	if err != nil {
 		return api.Response(500, nil), err
@@ -114,22 +114,9 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 
 // DeleteAsset - This REST API deletes data asset
 func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string, deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
-	// TODO - update DeleteAsset with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+	assetID := deleteAssetRequest.AssetID
 
-	//TODO: Uncomment the next line to return response Response(200, DeleteAssetResponse{}) or use other options such as http.Ok ...
-	//return Response(200, DeleteAssetResponse{}), nil
-
-	//TODO: Uncomment the next line to return response Response(400, {}) or use other options such as http.Ok ...
-	//return Response(400, nil),nil
-
-	//TODO: Uncomment the next line to return response Response(404, {}) or use other options such as http.Ok ...
-	//return Response(404, nil),nil
-
-	//TODO: Uncomment the next line to return response Response(401, {}) or use other options such as http.Ok ...
-	//return Response(401, nil),nil
-
-	return api.Response(http.StatusNotImplemented, nil), errors.New("DeleteAsset method not implemented")
+	return api.Response(200, api.DeleteAssetResponse{assetID}), nil
 }
 
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
