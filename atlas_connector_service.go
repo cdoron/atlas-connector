@@ -36,7 +36,7 @@ type ApacheApiService struct {
 // NewDefaultApiService creates a default api service
 func NewApacheApiService(conf map[interface{}]interface{}) AtlasApiServicer {
 	return &ApacheApiService{conf["atlas_hostname"].(string),
-		conf["atlas_port"].(string),
+		strconv.Itoa(conf["atlas_port"].(int)),
 		conf["atlas_username"].(string),
 		conf["atlas_password"].(string)}
 }
