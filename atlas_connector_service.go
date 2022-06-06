@@ -120,7 +120,7 @@ func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogC
 
 	resp, err := client.R().
 		SetBasicAuth(s.username, s.password).
-		Delete("http://localhost:21000/api/atlas/v2/entity/guid/" + assetID)
+		Delete("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity/guid/" + assetID)
 
 	if err != nil {
 		return api.Response(500, nil), err
@@ -140,7 +140,7 @@ func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalog
 	client := resty.New()
 	resp, err := client.R().
 		SetBasicAuth(s.username, s.password).
-		Get("http://localhost:21000/api/atlas/v2/entity/guid/" + assetID)
+		Get("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity/guid/" + assetID)
 
 	if err != nil {
 		return api.Response(500, nil), err
