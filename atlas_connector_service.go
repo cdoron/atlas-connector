@@ -135,16 +135,22 @@ func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogC
 
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
 func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
-	// TODO - update GetAssetInfo with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+	assetID := getAssetRequest.AssetID
 
-	//TODO: Uncomment the next line to return response Response(200, GetAssetResponse{}) or use other options such as http.Ok ...
-	//return Response(200, GetAssetResponse{}), nil
+	client := resty.New()
+	resp, err := client.R().
+		SetBasicAuth(s.username, s.password).
+		Get("http://localhost:21000/api/atlas/v2/entity/guid/" + assetID)
 
-	//TODO: Uncomment the next line to return response Response(400, {}) or use other options such as http.Ok ...
-	//return Response(400, nil),nil
+	if err != nil {
+		return api.Response(500, nil), err
+	}
 
-	return api.Response(http.StatusNotImplemented, nil), errors.New("GetAssetInfo method not implemented")
+	if resp.StatusCode() != 200 {
+		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
+	}
+
+	return api.Response(200, resp), nil
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
