@@ -15,6 +15,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	b64 "encoding/base64"
 
 	api "github.com/cdoron/datacatalog-go/api"
 	"github.com/go-resty/resty/v2"
@@ -42,7 +45,7 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("ZOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+			fmt.Println("Malformed response from Apache Atlas")
 			err = r.(error)
 		}
 	}()
@@ -67,8 +70,7 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	//return Response(400, nil),nil
 
 	assetName := createAssetRequest.DestinationCatalogID + "/" + createAssetRequest.DestinationAssetID
-
-	metadata := "fsdfsdfsdf"
+	metadata := b64.StdEncoding.EncodeToString(bodyBytes)
 
 	body := `
 	{
@@ -95,23 +97,19 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 		Post("http://localhost:21000/api/atlas/v2/entity")
 
 	if err != nil {
-		fmt.Println("Response Info:")
-		fmt.Println("  Error      :", err)
+		return api.Response(500, nil), err
 	}
 
 	if resp.StatusCode() != 200 {
-		fmt.Println("  Status Code:", resp.StatusCode())
+		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
 	}
 
-	fmt.Println("  Body       :\n", resp)
 	assetID, err := extract_asset_id_from_body(resp.Body())
 	if err != nil {
-		fmt.Println("malformed response or asset already exists")
-	} else {
-		fmt.Println("  assetID       : ", assetID)
+		return api.Response(400, nil), err
 	}
 
-	return api.Response(http.StatusNotImplemented, nil), errors.New("CreateAsset method not implemented")
+	return api.Response(200, api.CreateAssetResponse{assetID}), nil
 }
 
 // DeleteAsset - This REST API deletes data asset
