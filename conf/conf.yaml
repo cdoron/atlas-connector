@@ -1,0 +1,5 @@
+uuid: 12345678
+atlas_hostname: localhost
+atlas_port: 21000
+atlas_username: admin
+atlas_password: admin

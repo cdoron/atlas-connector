@@ -11,33 +11,105 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	api "github.com/cdoron/datacatalog-go/api"
+	"github.com/go-resty/resty/v2"
 )
 
 // DefaultApiService is a service that implements the logic for the DefaultApiServicer
 // This service should implement the business logic for every endpoint for the DefaultApi API.
 // Include any external packages or services that will be required by this service.
 type ApacheApiService struct {
+	hostname string
+	port     string
+	username string
+	password string
 }
 
 // NewDefaultApiService creates a default api service
-func NewApacheApiService(confMap map[interface{}]interface{}) api.DefaultApiServicer {
-	return &ApacheApiService{}
+func NewApacheApiService(conf map[interface{}]interface{}) AtlasApiServicer {
+	return &ApacheApiService{conf["atlas_hostname"].(string),
+		conf["atlas_port"].(string),
+		conf["atlas_username"].(string),
+		conf["atlas_password"].(string)}
+}
+
+func extract_asset_id_from_body(body []byte) (assetId string, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("ZOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+			err = r.(error)
+		}
+	}()
+
+	var result map[string]interface{}
+	json.Unmarshal(body, &result)
+	assetId = result["mutatedEntities"].(map[string]interface{})["CREATE"].([]interface{})[0].(map[string]interface{})["guid"].(string)
+
+	return assetId, err
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
-func (s *ApacheApiService) CreateAsset(ctx context.Context, xRequestDatacatalogWriteCred string, createAssetRequest api.CreateAssetRequest) (api.ImplResponse, error) {
-	// TODO - update CreateAsset with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+func (s *ApacheApiService) CreateAsset(ctx context.Context,
+	xRequestDatacatalogWriteCred string,
+	createAssetRequest api.CreateAssetRequest,
+	bodyBytes []byte) (api.ImplResponse, error) {
 
 	//TODO: Uncomment the next line to return response Response(201, CreateAssetResponse{}) or use other options such as http.Ok ...
 	//return Response(201, CreateAssetResponse{}), nil
 
 	//TODO: Uncomment the next line to return response Response(400, {}) or use other options such as http.Ok ...
 	//return Response(400, nil),nil
+
+	assetName := createAssetRequest.DestinationCatalogID + "/" + createAssetRequest.DestinationAssetID
+
+	metadata := "fsdfsdfsdf"
+
+	body := `
+	{
+	  "entity": {
+		  "typeName": "Asset",
+		  "attributes": {
+			  "qualifiedName": "` + assetName + `",
+			  "name": "` + assetName + `"
+		  },
+		  "customAttributes": {
+			  "metadata": "` + metadata + `"
+		  }
+	  }
+  }
+	`
+
+	client := resty.New()
+
+	resp, err := client.R().
+		SetBasicAuth("admin", "admin").
+		SetBody(body).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		Post("http://localhost:21000/api/atlas/v2/entity")
+
+	if err != nil {
+		fmt.Println("Response Info:")
+		fmt.Println("  Error      :", err)
+	}
+
+	if resp.StatusCode() != 200 {
+		fmt.Println("  Status Code:", resp.StatusCode())
+	}
+
+	fmt.Println("  Body       :\n", resp)
+	assetID, err := extract_asset_id_from_body(resp.Body())
+	if err != nil {
+		fmt.Println("malformed response or asset already exists")
+	} else {
+		fmt.Println("  assetID       : ", assetID)
+	}
 
 	return api.Response(http.StatusNotImplemented, nil), errors.New("CreateAsset method not implemented")
 }

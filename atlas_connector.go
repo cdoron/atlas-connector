@@ -10,7 +10,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -19,7 +21,7 @@ import (
 
 // DefaultApiController binds http requests to an api service and writes the service results to the http response
 type DefaultApiController struct {
-	service      api.DefaultApiServicer
+	service      AtlasApiServicer
 	errorHandler api.ErrorHandler
 }
 
@@ -34,7 +36,7 @@ func WithDefaultApiErrorHandler(h api.ErrorHandler) DefaultApiOption {
 }
 
 // NewDefaultApiController creates a default api controller
-func NewApacheApiController(s api.DefaultApiServicer, opts ...DefaultApiOption) api.Router {
+func NewApacheApiController(s AtlasApiServicer, opts ...DefaultApiOption) api.Router {
 	controller := &DefaultApiController{
 		service:      s,
 		errorHandler: api.DefaultErrorHandler,
@@ -81,6 +83,16 @@ func (c *DefaultApiController) Routes() api.Routes {
 func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogWriteCredParam := r.Header.Get("X-Request-Datacatalog-Write-Cred")
 	createAssetRequestParam := api.CreateAssetRequest{}
+
+	// We need to open the request body twice. Once to extract the body
+	// content as is, and once to contstruct the createAssetRequestParam.
+	// We need the body content as is, as it contains fields which are not
+	// defined in the spec (for example the s3 connection information) that
+	// gets lost in createAssetRequestParam.
+	bodyBytes, _ := ioutil.ReadAll(r.Body)
+	r.Body.Close() //  must close
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	d := json.NewDecoder(r.Body)
 
 	// removed following line to allow unrecognized fields
@@ -94,7 +106,7 @@ func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Reques
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, createAssetRequestParam)
+	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, createAssetRequestParam, bodyBytes)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
