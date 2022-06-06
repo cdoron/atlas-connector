@@ -24,7 +24,7 @@ type ApacheApiService struct {
 }
 
 // NewDefaultApiService creates a default api service
-func NewApacheApiService() api.DefaultApiServicer {
+func NewApacheApiService(confMap map[interface{}]interface{}) api.DefaultApiServicer {
 	return &ApacheApiService{}
 }
 
