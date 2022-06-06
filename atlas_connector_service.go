@@ -116,6 +116,20 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string, deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
 	assetID := deleteAssetRequest.AssetID
 
+	client := resty.New()
+
+	resp, err := client.R().
+		SetBasicAuth(s.username, s.password).
+		Delete("http://localhost:21000/api/atlas/v2/entity/guid/" + assetID)
+
+	if err != nil {
+		return api.Response(500, nil), err
+	}
+
+	if resp.StatusCode() != 200 {
+		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
+	}
+
 	return api.Response(200, api.DeleteAssetResponse{assetID}), nil
 }
 
