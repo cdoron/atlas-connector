@@ -57,6 +57,23 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 	return assetId, err
 }
 
+func extract_metadata_from_body(body []byte) (metadata string, deleted bool, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Malformed response from Apache Atlas")
+			err = r.(error)
+		}
+	}()
+
+	var result map[string]interface{}
+	json.Unmarshal(body, &result)
+	metadata = result["entity"].(map[string]interface{})["customAttributes"].(map[string]interface{})["metadata"].(string)
+	deleted = result["entity"].(map[string]interface{})["status"].(string) == "DELETED"
+
+	return metadata, deleted, err
+}
+
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	xRequestDatacatalogWriteCred string,
@@ -130,7 +147,7 @@ func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogC
 		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
 	}
 
-	return api.Response(200, api.DeleteAssetResponse{assetID}), nil
+	return api.Response(200, api.DeleteAssetResponse{"Deletion Successful"}), nil
 }
 
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
@@ -150,7 +167,24 @@ func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalog
 		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
 	}
 
-	return api.Response(200, resp), nil
+	metadata, deleted, err := extract_metadata_from_body(resp.Body())
+	if err != nil {
+		return api.Response(400, nil), err
+	}
+
+	if deleted {
+		return api.Response(404, "Asset already deleted"), nil
+	}
+
+	assetInfo, err := b64.StdEncoding.DecodeString(metadata)
+	if err != nil {
+		return api.Response(400, nil), err
+	}
+
+	var result map[string]interface{}
+	json.Unmarshal(assetInfo, &result)
+
+	return api.Response(200, result), nil
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
