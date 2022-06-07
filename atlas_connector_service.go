@@ -45,13 +45,21 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Malformed response from Apache Atlas")
 			err = r.(error)
 		}
 	}()
 
 	var result map[string]interface{}
-	json.Unmarshal(body, &result)
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", errors.New("Malformed response from Apache Atlas")
+	}
+
+	if innerMap, ok := result["guidAssignments"]; ok {
+		for _, val := range innerMap.(map[string]interface{}) {
+			return "", errors.New("Asset already exists: " + val.(string))
+		}
+	}
+
 	assetId = result["mutatedEntities"].(map[string]interface{})["CREATE"].([]interface{})[0].(map[string]interface{})["guid"].(string)
 
 	return assetId, err
