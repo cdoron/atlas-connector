@@ -1,0 +1,7 @@
+# See: `openapi-generator config-help -g go-server`
+featureCORS: true
+hideGenerationTimestamp: true
+packageName: api
+packageVersion: 1.0.0
+serverPort: 8080
+sourceFolder: api
