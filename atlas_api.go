@@ -23,5 +23,5 @@ type AtlasApiServicer interface {
 	CreateAsset(context.Context, string, api.CreateAssetRequest, []byte) (api.ImplResponse, error)
 	DeleteAsset(context.Context, string, api.DeleteAssetRequest) (api.ImplResponse, error)
 	GetAssetInfo(context.Context, string, api.GetAssetRequest) (api.ImplResponse, error)
-	UpdateAsset(context.Context, string, api.UpdateAssetRequest) (api.ImplResponse, error)
+	UpdateAsset(context.Context, string, api.UpdateAssetRequest, []byte) (api.ImplResponse, error)
 }

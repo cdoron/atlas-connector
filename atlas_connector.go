@@ -171,8 +171,21 @@ func (c *DefaultApiController) GetAssetInfo(w http.ResponseWriter, r *http.Reque
 func (c *DefaultApiController) UpdateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogUpdateCredParam := r.Header.Get("X-Request-Datacatalog-Update-Cred")
 	updateAssetRequestParam := api.UpdateAssetRequest{}
+
+	// We need to open the request body twice. Once to extract the body
+	// content as is, and once to contstruct the createAssetRequestParam.
+	// We need the body content as is, as it contains fields which are not
+	// defined in the spec (for example the s3 connection information) that
+	// gets lost in createAssetRequestParam.
+	bodyBytes, _ := ioutil.ReadAll(r.Body)
+	r.Body.Close() //  must close
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	d := json.NewDecoder(r.Body)
-	d.DisallowUnknownFields()
+
+	// removed following line to allow unrecognized fields
+	// d.DisallowUnknownFields()
+
 	if err := d.Decode(&updateAssetRequestParam); err != nil {
 		c.errorHandler(w, r, &api.ParsingError{Err: err}, nil)
 		return
@@ -181,7 +194,7 @@ func (c *DefaultApiController) UpdateAsset(w http.ResponseWriter, r *http.Reques
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.UpdateAsset(r.Context(), xRequestDatacatalogUpdateCredParam, updateAssetRequestParam)
+	result, err := c.service.UpdateAsset(r.Context(), xRequestDatacatalogUpdateCredParam, updateAssetRequestParam, bodyBytes)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

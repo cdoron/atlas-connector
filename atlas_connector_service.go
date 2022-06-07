@@ -196,7 +196,10 @@ func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalog
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
-func (s *ApacheApiService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string, updateAssetRequest api.UpdateAssetRequest) (api.ImplResponse, error) {
+func (s *ApacheApiService) UpdateAsset(ctx context.Context,
+	xRequestDatacatalogUpdateCred string,
+	updateAssetRequest api.UpdateAssetRequest,
+	bodyBytes []byte) (api.ImplResponse, error) {
 	// TODO - update UpdateAsset with the required logic for this service method.
 	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
 
