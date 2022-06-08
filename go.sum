@@ -1,7 +1,3 @@
-github.com/cdoron/datacatalog-go v0.0.0-20220601123610-d0fc887e78f8 h1:HkpGdwxV8fcvw1nUSJQfc/05R5ZftQ7mJ+g6UJbRRvE=
-github.com/cdoron/datacatalog-go v0.0.0-20220601123610-d0fc887e78f8/go.mod h1:BjWTf7kLK77+UH+HL2GtgwFsIUsAd0NZQYWGYi/a/yM=
-github.com/cdoron/datacatalog-go v0.0.0-20220601124730-cdb9bca2d7db h1:HHKavwcQ4flex9hrTV+sT3t6kwmXVR9orc3pu9ReW/U=
-github.com/cdoron/datacatalog-go v0.0.0-20220601124730-cdb9bca2d7db/go.mod h1:BjWTf7kLK77+UH+HL2GtgwFsIUsAd0NZQYWGYi/a/yM=
 github.com/felixge/httpsnoop v1.0.1 h1:lvB5Jl89CsZtGIWuTcDM1E/vkVs49/Ml7JJe07l8SPQ=
 github.com/felixge/httpsnoop v1.0.1/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/go-resty/resty/v2 v2.7.0 h1:me+K9p3uhSmXtrBZ4k9jcEAfJmuC8IivWHwaLZwPrFY=

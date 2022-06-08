@@ -1,8 +1,8 @@
-module github.com/cdoron/atlas-connector
+module github.com/fybrik/atlas-connector
 
 go 1.17
 
-require github.com/cdoron/datacatalog-go v0.0.0-20220601124730-cdb9bca2d7db
+require github.com/fybrik/datacatalog-go v0.0.0
 
 require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
@@ -13,4 +13,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/cdoron/datacatalog-go => ./api
+replace github.com/fybrik/datacatalog-go => ./api

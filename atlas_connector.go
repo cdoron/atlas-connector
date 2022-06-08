@@ -16,7 +16,7 @@ import (
 	"net/http"
 	"strings"
 
-	api "github.com/cdoron/datacatalog-go/api"
+	api "github.com/fybrik/datacatalog-go/api"
 )
 
 // DefaultApiController binds http requests to an api service and writes the service results to the http response

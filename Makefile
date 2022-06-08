@@ -2,7 +2,7 @@ ETCD_CONNECTOR_DIR := ${PWD}
 USER_ID := $(shell id -u)
 GROUP_ID := $(shell id -g)
 
-GIT_USER_ID := cdoron
+GIT_USER_ID := fybrik
 GIT_REPO_ID := datacatalog-go
 
 all: generate-code patch

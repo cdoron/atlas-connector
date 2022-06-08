@@ -16,7 +16,7 @@ import (
 	"log"
 	"net/http"
 
-	api "github.com/cdoron/datacatalog-go/api"
+	api "github.com/fybrik/datacatalog-go/api"
 	"gopkg.in/yaml.v2"
 )
 

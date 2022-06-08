@@ -12,7 +12,7 @@ package main
 import (
 	"context"
 
-	api "github.com/cdoron/datacatalog-go/api"
+	api "github.com/fybrik/datacatalog-go/api"
 )
 
 // DefaultApiServicer defines the api actions for the DefaultApi service

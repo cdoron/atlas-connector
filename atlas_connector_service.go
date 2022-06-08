@@ -19,7 +19,7 @@ import (
 
 	b64 "encoding/base64"
 
-	api "github.com/cdoron/datacatalog-go/api"
+	api "github.com/fybrik/datacatalog-go/api"
 	"github.com/go-resty/resty/v2"
 )
 
