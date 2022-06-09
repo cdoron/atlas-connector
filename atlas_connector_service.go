@@ -53,15 +53,18 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 		return "", errors.New("Malformed response from Apache Atlas")
 	}
 
+	if innerMap, ok := result["mutatedEntities"]; ok {
+		assetId = innerMap.(map[string]interface{})["CREATE"].([]interface{})[0].(map[string]interface{})["guid"].(string)
+		return assetId, nil
+	}
+
 	if innerMap, ok := result["guidAssignments"]; ok {
 		for _, val := range innerMap.(map[string]interface{}) {
 			return "", errors.New("Asset already exists: " + val.(string))
 		}
 	}
 
-	assetId = result["mutatedEntities"].(map[string]interface{})["CREATE"].([]interface{})[0].(map[string]interface{})["guid"].(string)
-
-	return assetId, err
+	return "", nil
 }
 
 func extract_metadata_from_body(body []byte) (metadata string, qualifiedName string, deleted bool, err error) {
