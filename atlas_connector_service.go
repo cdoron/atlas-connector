@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	b64 "encoding/base64"
@@ -65,7 +64,7 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 	return assetId, err
 }
 
-func extract_metadata_from_body(body []byte) (metadata string, deleted bool, err error) {
+func extract_metadata_from_body(body []byte) (metadata string, qualifiedName string, deleted bool, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -77,9 +76,29 @@ func extract_metadata_from_body(body []byte) (metadata string, deleted bool, err
 	var result map[string]interface{}
 	json.Unmarshal(body, &result)
 	metadata = result["entity"].(map[string]interface{})["customAttributes"].(map[string]interface{})["metadata"].(string)
+	qualifiedName = result["entity"].(map[string]interface{})["attributes"].(map[string]interface{})["qualifiedName"].(string)
 	deleted = result["entity"].(map[string]interface{})["status"].(string) == "DELETED"
 
-	return metadata, deleted, err
+	return metadata, qualifiedName, deleted, err
+}
+
+func (s *ApacheApiService) writeAssetInfoToAtlas(client *resty.Client, body string) ([]byte, int, error) {
+	resp, err := client.R().
+		SetBasicAuth(s.username, s.password).
+		SetBody(body).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		Post("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity")
+
+	if err != nil {
+		return nil, 500, err
+	}
+
+	if resp.StatusCode() != 200 {
+		return nil, resp.StatusCode(), errors.New("Got " + strconv.Itoa(resp.StatusCode()) + " from Atlas server")
+	}
+
+	return resp.Body(), 200, nil
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
@@ -114,22 +133,12 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 
 	client := resty.New()
 
-	resp, err := client.R().
-		SetBasicAuth(s.username, s.password).
-		SetBody(body).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		Post("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity")
-
+	respBody, statusCode, err := s.writeAssetInfoToAtlas(client, body)
 	if err != nil {
-		return api.Response(500, nil), err
+		return api.Response(statusCode, nil), err
 	}
 
-	if resp.StatusCode() != 200 {
-		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
-	}
-
-	assetID, err := extract_asset_id_from_body(resp.Body())
+	assetID, err := extract_asset_id_from_body(respBody)
 	if err != nil {
 		return api.Response(400, nil), err
 	}
@@ -158,40 +167,50 @@ func (s *ApacheApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogC
 	return api.Response(200, api.DeleteAssetResponse{"Deletion Successful"}), nil
 }
 
-// GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
-func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
-	assetID := getAssetRequest.AssetID
-
-	client := resty.New()
+func (s *ApacheApiService) getAssetInfoFromAtlas(client *resty.Client, assetID string) (map[string]interface{}, string, int, error) {
 	resp, err := client.R().
 		SetBasicAuth(s.username, s.password).
 		Get("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity/guid/" + assetID)
 
 	if err != nil {
-		return api.Response(500, nil), err
+		return nil, "", 500, err
 	}
 
 	if resp.StatusCode() != 200 {
-		return api.Response(resp.StatusCode(), errors.New("Got "+strconv.Itoa(resp.StatusCode())+" from Atlas server")), nil
+		return nil, "", resp.StatusCode(), errors.New("Got " + strconv.Itoa(resp.StatusCode()) + " from Atlas server")
 	}
 
-	metadata, deleted, err := extract_metadata_from_body(resp.Body())
+	metadata, qualifiedName, deleted, err := extract_metadata_from_body(resp.Body())
 	if err != nil {
-		return api.Response(400, nil), err
+		return nil, "", 400, err
 	}
 
 	if deleted {
-		return api.Response(404, "Asset already deleted"), nil
+		return nil, "", 404, errors.New("Asset already deleted")
 	}
 
 	assetInfo, err := b64.StdEncoding.DecodeString(metadata)
 	if err != nil {
-		return api.Response(400, nil), err
+		return nil, "", 400, err
 	}
 
 	var result map[string]interface{}
-	json.Unmarshal(assetInfo, &result)
+	err = json.Unmarshal(assetInfo, &result)
+	if err != nil {
+		return nil, "", 400, errors.New("Failed to unmarshal asset info")
+	}
 
+	return result, qualifiedName, 200, nil
+}
+
+// GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
+func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
+	assetID := getAssetRequest.AssetID
+	client := resty.New()
+	result, _, statusCode, err := s.getAssetInfoFromAtlas(client, assetID)
+	if err != nil {
+		return api.Response(statusCode, nil), nil
+	}
 	return api.Response(200, result), nil
 }
 
@@ -212,5 +231,55 @@ func (s *ApacheApiService) UpdateAsset(ctx context.Context, xRequestDatacatalogU
 	//TODO: Uncomment the next line to return response Response(401, {}) or use other options such as http.Ok ...
 	//return Response(401, nil),nil
 
-	return api.Response(http.StatusNotImplemented, nil), errors.New("UpdateAsset method not implemented")
+	// we begin by reading the current metadata
+	assetID := updateAssetRequest.AssetID
+	client := resty.New()
+
+	result, qualifiedName, statusCode, err := s.getAssetInfoFromAtlas(client, assetID)
+	if err != nil {
+		return api.Response(statusCode, nil), nil
+	}
+
+	if updateAssetRequest.Name != "" {
+		result["resourceMetadata"].(map[string]interface{})["name"] = updateAssetRequest.Name
+	}
+
+	if updateAssetRequest.Owner != "" {
+		result["resourceMetadata"].(map[string]interface{})["owner"] = updateAssetRequest.Owner
+	}
+
+	if updateAssetRequest.Columns != nil {
+		result["resourceMetadata"].(map[string]interface{})["columns"] = updateAssetRequest.Columns
+	}
+
+	if updateAssetRequest.Tags != nil {
+		result["resourceMetadata"].(map[string]interface{})["tags"] = updateAssetRequest.Tags
+	}
+	jsonString, err := json.Marshal(result)
+	fmt.Println(string(jsonString))
+
+	metadata := b64.StdEncoding.EncodeToString(jsonString)
+
+	body := `
+	{
+	  "entity": {
+		  "typeName": "Asset",
+		  "guid": "` + assetID + `",
+		  "attributes": {
+			"qualifiedName": "` + qualifiedName + `",
+			"name": "` + qualifiedName + `"
+		  },
+		  "customAttributes": {
+			  "metadata": "` + metadata + `"
+		  }
+	  }
+  }
+	`
+	respBody, statusCode, err := s.writeAssetInfoToAtlas(client, body)
+	if err != nil {
+		return api.Response(statusCode, nil), err
+	}
+	fmt.Println(string(respBody))
+
+	return api.Response(200, api.UpdateAssetResponse{"Asset Update Successful"}), nil
 }
