@@ -104,6 +104,31 @@ func (s *ApacheApiService) writeAssetInfoToAtlas(client *resty.Client, body stri
 	return resp.Body(), 200, nil
 }
 
+func (s *ApacheApiService) checkIfAssetExists(client *resty.Client, qualifiedName string) (bool, int, error) {
+	resp, err := client.R().
+		SetBasicAuth(s.username, s.password).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetQueryParam("qualifiedName", qualifiedName).
+		Get("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity/bulk/uniqueAttribute/type/Asset")
+
+	if err != nil {
+		return false, 500, err
+	}
+
+	if resp.StatusCode() != 200 {
+		return false, resp.StatusCode(), errors.New("Got " + strconv.Itoa(resp.StatusCode()) + " from Atlas server")
+	}
+	var result map[string]interface{}
+	json.Unmarshal(resp.Body(), &result)
+
+	if len(result) > 0 {
+		return true, 200, nil
+	} else {
+		return false, 200, nil
+	}
+}
+
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	xRequestDatacatalogWriteCred string,
@@ -117,6 +142,16 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	//return Response(400, nil),nil
 
 	assetName := createAssetRequest.DestinationCatalogID + "/" + createAssetRequest.DestinationAssetID
+
+	client := resty.New()
+	exists, statusCode, err := s.checkIfAssetExists(client, assetName)
+	if err != nil {
+		return api.Response(statusCode, nil), err
+	}
+	if exists {
+		return api.Response(400, nil), errors.New("Asset already exists")
+	}
+
 	metadata := b64.StdEncoding.EncodeToString(bodyBytes)
 
 	body := `
@@ -133,8 +168,6 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	  }
   }
 	`
-
-	client := resty.New()
 
 	respBody, statusCode, err := s.writeAssetInfoToAtlas(client, body)
 	if err != nil {
