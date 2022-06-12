@@ -13,6 +13,10 @@ asset_data = json.loads(data)
 print("Creating asset")
 response = requests.post("http://localhost:8080/createAsset", json=asset_data, headers=headers)
 
+if response.status_code != 200:
+    print("error code: " + str(response.status_code))
+    print("error message: " + str(response.text))
+
 assert response.status_code == 200
 
 assetID = response.json()["assetID"]

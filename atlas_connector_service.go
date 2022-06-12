@@ -58,12 +58,6 @@ func extract_asset_id_from_body(body []byte) (assetId string, err error) {
 		return assetId, nil
 	}
 
-	if innerMap, ok := result["guidAssignments"]; ok {
-		for _, val := range innerMap.(map[string]interface{}) {
-			return "", errors.New("Asset already exists: " + val.(string))
-		}
-	}
-
 	return "", nil
 }
 
@@ -109,7 +103,7 @@ func (s *ApacheApiService) checkIfAssetExists(client *resty.Client, qualifiedNam
 		SetBasicAuth(s.username, s.password).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetQueryParam("qualifiedName", qualifiedName).
+		SetQueryParam("attr_0:qualifiedName", qualifiedName).
 		Get("http://" + s.hostname + ":" + s.port + "/api/atlas/v2/entity/bulk/uniqueAttribute/type/Asset")
 
 	if err != nil {
