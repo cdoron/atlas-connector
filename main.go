@@ -10,46 +10,72 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	api "github.com/fybrik/datacatalog-go/api"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
+// RunCmd defines the command for running the connector
+func RunCmd() *cobra.Command {
+	configFile := "/etc/conf/conf.yaml"
+	port := 8080
+	cmd := &cobra.Command{
+		Use:   "run",
+		Short: "Run the connector",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// TODO - add logging level
+
+			yamlFile, err := ioutil.ReadFile(configFile)
+
+			if err != nil {
+				return err
+			}
+
+			conf := make(map[interface{}]interface{})
+
+			err = yaml.Unmarshal(yamlFile, &conf)
+			if err != nil {
+				return err
+			}
+
+			log.Printf("Server started")
+
+			DefaultApiService := NewApacheApiService(conf)
+			DefaultApiController := NewApacheApiController(DefaultApiService)
+
+			router := api.NewRouter(DefaultApiController)
+
+			log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
+
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&configFile, "config", configFile, "Configuration file")
+	cmd.Flags().IntVar(&port, "port", port, "Listening port")
+	return cmd
+}
+
+// RootCmd defines the root cli command
+func RootCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "atlas-connector",
+		Short: "Kubernetes based Atlas data catalog connector for Fybrik",
+	}
+	cmd.AddCommand(RunCmd())
+	return cmd
+}
+
 func main() {
-	port := flag.Int("port", 8080, "Listening port")
-	var configFile string
-	flag.StringVar(&configFile, "config", "/etc/conf/conf.yaml", "")
-	flag.Parse()
-
-	fmt.Println("port:", *port)
-	fmt.Println("config file:", configFile)
-
-	// TODO - add logging level
-
-	yamlFile, err := ioutil.ReadFile(configFile)
-
-	if err != nil {
-		panic(err)
+	// Run the cli
+	if err := RootCmd().Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	conf := make(map[interface{}]interface{})
-
-	err = yaml.Unmarshal(yamlFile, &conf)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("Server started")
-
-	DefaultApiService := NewApacheApiService(conf)
-	DefaultApiController := NewApacheApiController(DefaultApiService)
-
-	router := api.NewRouter(DefaultApiController)
-
-	log.Fatal(http.ListenAndServe(":8080", router))
 }
