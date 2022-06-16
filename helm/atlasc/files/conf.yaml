@@ -1,0 +1,5 @@
+uuid: {{ .Values.uuid | default "app-uuid-missing" }}
+atlas_hostname: {{ .Values.atlas_hostname | default "atlas_hostname-missing" }}
+atlas_port: {{ .Values.atlas_port | default "atlas_port-missing" }}
+atlas_username: {{ .Values.atlas_username | default "admin" }}
+atlas_password: {{ .Values.atlas_password | default "admin" }}
