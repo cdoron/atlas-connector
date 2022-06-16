@@ -85,7 +85,7 @@ func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Reques
 	createAssetRequestParam := api.CreateAssetRequest{}
 
 	// We need to open the request body twice. Once to extract the body
-	// content as is, and once to contstruct the createAssetRequestParam.
+	// content as is, and once to construct the createAssetRequestParam.
 	// We need the body content as is, as it contains fields which are not
 	// defined in the spec (for example the s3 connection information) that
 	// gets lost in createAssetRequestParam.
