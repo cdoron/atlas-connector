@@ -145,18 +145,17 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 
 	body := `
 	{
-	  "entity": {
-		  "typeName": "Asset",
-		  "attributes": {
-			  "qualifiedName": "` + assetName + `",
-			  "name": "` + assetName + `"
-		  },
-		  "customAttributes": {
-			  "metadata": "` + metadata + `"
-		  }
-	  }
-  }
-	`
+		"entity": {
+			"typeName": "Asset",
+			"attributes": {
+				"qualifiedName": "` + assetName + `",
+				"name": "` + assetName + `"
+			},
+			"customAttributes": {
+				"metadata": "` + metadata + `"
+			}
+		}
+	}`
 
 	respBody, statusCode, err := s.writeAssetInfoToAtlas(client, body)
 	if err != nil {
@@ -273,19 +272,18 @@ func (s *ApacheApiService) UpdateAsset(ctx context.Context, xRequestDatacatalogU
 
 	body := `
 	{
-	  "entity": {
-		  "typeName": "Asset",
-		  "guid": "` + assetID + `",
-		  "attributes": {
-			"qualifiedName": "` + qualifiedName + `",
-			"name": "` + qualifiedName + `"
-		  },
-		  "customAttributes": {
-			  "metadata": "` + metadata + `"
-		  }
-	  }
-  }
-	`
+		"entity": {
+			"typeName": "Asset",
+			"guid": "` + assetID + `",
+			"attributes": {
+				"qualifiedName": "` + qualifiedName + `",
+				"name": "` + qualifiedName + `"
+			},
+			"customAttributes": {
+				"metadata": "` + metadata + `"
+			}
+		}
+	}`
 	respBody, statusCode, err := s.writeAssetInfoToAtlas(client, body)
 	if err != nil {
 		return api.Response(statusCode, nil), err
