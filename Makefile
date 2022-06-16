@@ -5,7 +5,33 @@ GROUP_ID := $(shell id -g)
 GIT_USER_ID := fybrik
 GIT_REPO_ID := datacatalog-go
 
-all: generate-code patch
+DOCKER_HOSTNAME ?= ghcr.io
+DOCKER_NAMESPACE ?= cdoron
+DOCKER_TAG ?= 0.0.0
+DOCKER_NAME ?= atlas-connector
+
+IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${DOCKER_NAME}:${DOCKER_TAG}
+export HELM_EXPERIMENTAL_OCI=1
+
+
+all: build
+
+.PHONY: compile
+compile:
+	go build .
+
+.PHONY: build
+build: compile
+	docker build . -t ${IMG}; cd ..
+
+.PHONY: docker-push
+docker-push:
+	docker push ${IMG}
+
+.PHONY: push-to-kind
+push-to-kind:
+	kind load docker-image ${IMG}
+
 
 generate-code:
 	git clone https://github.com/fybrik/fybrik/
