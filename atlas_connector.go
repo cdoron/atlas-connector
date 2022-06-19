@@ -77,10 +77,12 @@ func (c *DefaultApiController) Routes() api.Routes {
 	}
 }
 
-// REMOVED DisallowUnknownFields()
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogWriteCredParam := r.Header.Get("X-Request-Datacatalog-Write-Cred")
+
+	// CHANGE-FROM-GENERATED-CODE: we translate the body to be a CreateAssetRequest object
+	// taken from "fybrik.io/fybrik/pkg/model/datacatalog" instead of from auto-generated code
 	createAssetRequestParam := fybrikapi.CreateAssetRequest{}
 
 	d := json.NewDecoder(r.Body)
@@ -91,6 +93,9 @@ func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Reques
 		c.errorHandler(w, r, &api.ParsingError{Err: err}, nil)
 		return
 	}
+
+	// CHANGE-FROM-GENERATED-CODE: commented out AssertCreateAssetRequestRequired() because
+	// this method does not exist for CreateAssetRequest struct defined in Fybrik code
 
 	//if err := api.AssertCreateAssetRequestRequired(createAssetRequestParam); err != nil {
 	//	c.errorHandler(w, r, err, nil)
