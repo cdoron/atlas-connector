@@ -234,7 +234,7 @@ func (s *ApacheApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalog
 	client := resty.New()
 	result, _, statusCode, err := s.getAssetInfoFromAtlas(client, assetID)
 	if err != nil {
-		return api.Response(statusCode, nil), nil
+		return api.Response(statusCode, nil), err
 	}
 	return api.Response(200, result), nil
 }
@@ -248,7 +248,7 @@ func (s *ApacheApiService) UpdateAsset(ctx context.Context, xRequestDatacatalogU
 	// determine qualifiedName of asset. Also, fail if asset does not exist.
 	result, qualifiedName, statusCode, err := s.getAssetInfoFromAtlas(client, assetID)
 	if err != nil {
-		return api.Response(statusCode, nil), nil
+		return api.Response(statusCode, nil), err
 	}
 
 	if updateAssetRequest.Name != "" {
