@@ -8,12 +8,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
+	fybrikapi "fybrik.io/fybrik/pkg/model/datacatalog"
 	api "github.com/fybrik/datacatalog-go/api"
 )
 
@@ -82,31 +81,23 @@ func (c *DefaultApiController) Routes() api.Routes {
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogWriteCredParam := r.Header.Get("X-Request-Datacatalog-Write-Cred")
-	createAssetRequestParam := api.CreateAssetRequest{}
-
-	// We need to open the request body twice. Once to extract the body
-	// content as is, and once to construct the createAssetRequestParam.
-	// We need the body content as is, as it contains fields which are not
-	// defined in the spec (for example the s3 connection information) that
-	// gets lost in createAssetRequestParam.
-	bodyBytes, _ := ioutil.ReadAll(r.Body)
-	r.Body.Close() //  must close
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	createAssetRequestParam := fybrikapi.CreateAssetRequest{}
 
 	d := json.NewDecoder(r.Body)
 
-	// removed following line to allow unrecognized fields
-	// d.DisallowUnknownFields()
+	d.DisallowUnknownFields()
 
 	if err := d.Decode(&createAssetRequestParam); err != nil {
 		c.errorHandler(w, r, &api.ParsingError{Err: err}, nil)
 		return
 	}
-	if err := api.AssertCreateAssetRequestRequired(createAssetRequestParam); err != nil {
-		c.errorHandler(w, r, err, nil)
-		return
-	}
-	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, createAssetRequestParam, bodyBytes)
+
+	//if err := api.AssertCreateAssetRequestRequired(createAssetRequestParam); err != nil {
+	//	c.errorHandler(w, r, err, nil)
+	//	return
+	//}
+
+	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, createAssetRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

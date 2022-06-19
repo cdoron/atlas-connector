@@ -16,6 +16,7 @@ import (
 
 	b64 "encoding/base64"
 
+	fybrikapi "fybrik.io/fybrik/pkg/model/datacatalog"
 	api "github.com/fybrik/datacatalog-go/api"
 	"github.com/go-resty/resty/v2"
 )
@@ -126,8 +127,7 @@ func (s *ApacheApiService) checkIfAssetExists(client *resty.Client, qualifiedNam
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (s *ApacheApiService) CreateAsset(ctx context.Context,
 	xRequestDatacatalogWriteCred string,
-	createAssetRequest api.CreateAssetRequest,
-	bodyBytes []byte) (api.ImplResponse, error) {
+	createAssetRequest fybrikapi.CreateAssetRequest) (api.ImplResponse, error) {
 
 	assetName := createAssetRequest.DestinationCatalogID + "/" + createAssetRequest.DestinationAssetID
 
@@ -140,8 +140,10 @@ func (s *ApacheApiService) CreateAsset(ctx context.Context,
 		return api.Response(400, nil), errors.New("Asset already exists")
 	}
 
+	bodyJson, err := json.Marshal(createAssetRequest)
+
 	// encode the body and place the encoded string in the 'metadata' customAttributes field
-	metadata := b64.StdEncoding.EncodeToString(bodyBytes)
+	metadata := b64.StdEncoding.EncodeToString(bodyJson)
 
 	body := `
 	{

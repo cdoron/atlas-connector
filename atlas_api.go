@@ -10,6 +10,7 @@ package main
 import (
 	"context"
 
+	fybrikapi "fybrik.io/fybrik/pkg/model/datacatalog"
 	api "github.com/fybrik/datacatalog-go/api"
 )
 
@@ -18,7 +19,7 @@ import (
 // which are not part of the DataCatalog spec. These fields are removed from the
 // CreateAssetRequest
 type AtlasApiServicer interface {
-	CreateAsset(context.Context, string, api.CreateAssetRequest, []byte) (api.ImplResponse, error)
+	CreateAsset(context.Context, string, fybrikapi.CreateAssetRequest) (api.ImplResponse, error)
 	DeleteAsset(context.Context, string, api.DeleteAssetRequest) (api.ImplResponse, error)
 	GetAssetInfo(context.Context, string, api.GetAssetRequest) (api.ImplResponse, error)
 	UpdateAsset(context.Context, string, api.UpdateAssetRequest) (api.ImplResponse, error)
